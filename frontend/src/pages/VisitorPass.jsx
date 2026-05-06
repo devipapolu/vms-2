@@ -121,6 +121,7 @@ const VisitorPass = () => {
             <div className="space-y-3">
               <InfoRow icon={<User className="w-4 h-4" />} label="Visiting" value={passData?.hostName} />
               <InfoRow icon={<Building2 className="w-4 h-4" />} label="Department" value={passData?.hostDept} />
+              <InfoRow icon={<Building2 className="w-4 h-4" />} label="Meeting Room" value={`${passData?.roomName} (${passData?.roomLocation})`} />
               <InfoRow icon={<Briefcase className="w-4 h-4" />} label="Purpose" value={passData?.purpose} />
               <InfoRow icon={<Clock className="w-4 h-4" />} label="Check-in" value={fmt(passData?.checkInTime)} />
               {passData?.checkOutTime && (

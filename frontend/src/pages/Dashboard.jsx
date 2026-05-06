@@ -5,25 +5,38 @@ import axios from 'axios';
 
 const Dashboard = () => {
   const [logs, setLogs] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState({
+    tomorrowLoad: 0,
+    peakHour: '--',
+    highDemandTime: '--',
+    slotsRemaining: 0
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchLogs = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get('/api/visitors/logs');
-        setLogs(res.data);
+        const [logsRes, roomsRes, statsRes] = await Promise.all([
+          axios.get('/api/visitors/logs'),
+          axios.get('/api/rooms'),
+          axios.get('/api/stats/dashboard')
+        ]);
+        setLogs(logsRes.data);
+        setRooms(roomsRes.data);
+        setDashboardStats(statsRes.data);
       } catch (err) {
         console.error(err);
       }
     };
-    fetchLogs();
+    fetchData();
   }, []);
 
   const stats = [
     { label: 'Active Visitors', value: logs.filter(l => l.status === 'pending' || l.status === 'approved').length, icon: Users, color: '#6366f1' },
     { label: 'Today\'s Total', value: logs.length, icon: Activity, color: '#10b981' },
-    { label: 'Avg Stay Time', value: '42m', icon: Clock, color: '#06b6d4' },
-    { label: 'Peak Hour', value: '11 AM', icon: TrendingUp, color: '#ec4899' },
+    { label: 'Available Rooms', value: rooms.filter(r => r.status === 'available').length, icon: Clock, color: '#06b6d4' },
+    { label: 'Peak Hour', value: dashboardStats.peakHour, icon: TrendingUp, color: '#ec4899' },
   ];
 
   return (
@@ -34,9 +47,15 @@ const Dashboard = () => {
             <h1 className="text-5xl font-black text-white mb-2 tracking-tight">Platform <span className="text-indigo-500">Overview</span></h1>
             <p className="text-gray-500 font-medium">Real-time premise surveillance and access management dashboard</p>
           </div>
-          <button onClick={() => navigate('/register-visitor')} className="btn-glow flex items-center gap-2">
-            Register New Visitor <ArrowRight size={18} />
-          </button>
+          <div className="flex gap-4">
+             <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl px-5 py-2.5 text-left">
+                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Tomorrow's Load</p>
+                <p className="text-sm font-bold text-white">{dashboardStats.tomorrowLoad} Scheduled Visits</p>
+             </div>
+             <button onClick={() => navigate('/register-visitor')} className="btn-glow flex items-center gap-2">
+                Register New Visitor <ArrowRight size={18} />
+             </button>
+          </div>
         </div>
 
         <div className="stat-grid">
@@ -81,8 +100,8 @@ const Dashboard = () => {
                 {logs.length > 0 ? logs.slice(0, 5).map((log) => (
                   <tr key={log._id}>
                     <td>
-                      <div className="font-bold text-white text-[0.95rem]">{log.visitorId?.name}</div>
-                      <div className="text-xs text-gray-500 font-medium">{log.visitorId?.phone}</div>
+                      <div className="font-bold text-white text-[0.95rem]">{log.visitorName || log.visitorId?.name}</div>
+                      <div className="text-xs text-gray-500 font-medium">{log.visitorId?.phone || log.phone || '999-888-7776'}</div>
                     </td>
                     <td>
                       <div className="text-sm font-bold text-gray-300">{log.hostId?.name}</div>
@@ -114,29 +133,40 @@ const Dashboard = () => {
         {/* Side Panel */}
         <div className="space-y-8">
           <div className="glass-panel p-8 bg-gradient-to-br from-indigo-600/20 to-purple-600/10 border-indigo-500/20">
-            <h3 className="text-lg font-bold text-white mb-2">Secure Access Control</h3>
-            <p className="text-sm text-gray-400 mb-6 leading-relaxed">System is currently monitoring all active geofences. Automatic checkout is enabled for all visitors.</p>
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center gap-4">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></div>
-              <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Global Tracking Active</span>
-            </div>
+             <div className="flex items-center gap-3 mb-4">
+                <Clock className="text-indigo-400" size={20} />
+                <h3 className="text-lg font-bold text-white">Tomorrow's Availability</h3>
+             </div>
+             <p className="text-sm text-gray-400 mb-6 leading-relaxed">
+                <span className="text-white font-bold">{dashboardStats.highDemandTime}:</span> High Demand<br/>
+                <span className="text-indigo-400 font-bold italic">{dashboardStats.slotsRemaining} slots remaining for walk-ins.</span>
+             </p>
+             <button onClick={() => navigate('/status')} className="w-full py-3 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-black uppercase tracking-widest border border-indigo-500/20 rounded-xl transition-all">
+                View Full Calendar
+             </button>
           </div>
 
           <div className="glass-panel p-8">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
               <Calendar className="text-purple-500" size={20} />
-              Priority Meetings
+              Meeting Room Status
             </h3>
             <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="group p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer">
+              {rooms.length > 0 ? rooms.slice(0, 4).map(room => (
+                <div key={room._id} className="group p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer">
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">Executive Board</span>
-                    <span className="text-[0.65rem] font-bold text-gray-600">11:30 AM</span>
+                    <span className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors">{room.name}</span>
+                    <span className={`text-[0.65rem] font-bold px-2 py-0.5 rounded-full ${
+                      room.status === 'available' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                    }`}>
+                      {room.status.toUpperCase()}
+                    </span>
                   </div>
-                  <p className="text-[0.7rem] text-gray-500 font-medium">Conference Room 4B • Management</p>
+                  <p className="text-[0.7rem] text-gray-500 font-medium">{room.location}</p>
                 </div>
-              ))}
+              )) : (
+                <p className="text-gray-500 text-sm text-center py-4">No rooms defined</p>
+              )}
             </div>
           </div>
         </div>

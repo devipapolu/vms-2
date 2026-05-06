@@ -24,16 +24,18 @@ const DEMO_PENDING = [
 
 const Status = () => {
   const [hosts, setHosts] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [pendingVisitors, setPendingVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
-  const [generatedQR, setGeneratedQR] = useState(null); // { logId, qrToken, visitorName }
+  const [generatedQR, setGeneratedQR] = useState(null);
+  const [selectedRooms, setSelectedRooms] = useState({}); // { logId: roomId }
   const navigate = useNavigate();
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch hosts with live status
+      // Fetch hosts
       let hostsData = [];
       try {
         const res = await axios.get('/api/hosts');
@@ -48,7 +50,19 @@ const Status = () => {
       }
       setHosts(hostsData);
 
-      // Fetch pending/approved visitors
+      // Fetch rooms
+      try {
+        const roomsRes = await axios.get('/api/rooms');
+        setRooms(roomsRes.data);
+      } catch {
+        setRooms([
+          { _id: 'r1', name: 'Conference Room A', status: 'available' },
+          { _id: 'r2', name: 'Meeting Cabin 101', status: 'occupied' },
+          { _id: 'r3', name: 'MD Cabin Private', status: 'available' },
+        ]);
+      }
+
+      // Fetch visitors
       try {
         const logsRes = await axios.get('/api/visitors/logs');
         const pending = logsRes.data.filter(l => l.status === 'pending' || l.status === 'approved');
@@ -66,15 +80,25 @@ const Status = () => {
   useEffect(() => { fetchData(); }, []);
 
   const handleApprove = async (logId, visitorName) => {
+    const roomId = selectedRooms[logId];
+    if (!roomId) {
+      alert("Please select a meeting room first!");
+      return;
+    }
+
+    const roomObj = rooms.find(r => r._id === roomId);
     setActionLoading(logId + '_approve');
     try {
-      const res = await axios.post('/api/visitors/approve', { logId });
-      setGeneratedQR({ logId, qrToken: res.data.qrToken, visitorName });
+      const res = await axios.post('/api/visitors/approve', { 
+        logId, 
+        roomId, 
+        roomName: roomObj?.name 
+      });
+      setGeneratedQR({ logId, qrToken: res.data.qrToken, visitorName, roomName: roomObj?.name });
       await fetchData();
     } catch {
-      // Demo mode: simulate QR
       const mockToken = `DEMO-${Date.now()}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
-      setGeneratedQR({ logId, qrToken: mockToken, visitorName });
+      setGeneratedQR({ logId, qrToken: mockToken, visitorName, roomName: roomObj?.name });
       setPendingVisitors(prev => prev.filter(v => v._id !== logId));
     }
     setActionLoading(null);
@@ -217,30 +241,46 @@ const Status = () => {
                   </span>
 
                   {visitor.status === 'pending' && (
-                    <>
-                      <button
-                        onClick={() => handleApprove(visitor._id, visitor.visitorName || visitor.visitorId?.name)}
-                        disabled={!!actionLoading}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/20 transition-all disabled:opacity-50"
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      {/* Room Selection */}
+                      <select
+                        value={selectedRooms[visitor._id] || ''}
+                        onChange={(e) => setSelectedRooms({ ...selectedRooms, [visitor._id]: e.target.value })}
+                        className="bg-white/5 border border-white/10 text-gray-300 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-indigo-500/50 transition-all min-w-[160px] [color-scheme:dark]"
                       >
-                        {actionLoading === visitor._id + '_approve'
-                          ? <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                          : <CheckCircle2 className="w-3.5 h-3.5" />
-                        }
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleReject(visitor._id)}
-                        disabled={!!actionLoading}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-bold rounded-xl border border-red-500/20 transition-all disabled:opacity-50"
-                      >
-                        {actionLoading === visitor._id + '_reject'
-                          ? <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-                          : <XCircle className="w-3.5 h-3.5" />
-                        }
-                        Reject
-                      </button>
-                    </>
+                        <option value="" className="bg-[#1e293b] text-white">Select Meeting Room</option>
+                        {rooms.map(room => (
+                          <option key={room._id} value={room._id} disabled={room.status !== 'available'} className="bg-[#1e293b] text-white">
+                            {room.name} ({room.status === 'available' ? 'Available' : 'Occupied'})
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleApprove(visitor._id, visitor.visitorName || visitor.visitorId?.name)}
+                          disabled={!!actionLoading}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/20 transition-all disabled:opacity-50"
+                        >
+                          {actionLoading === visitor._id + '_approve'
+                            ? <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                            : <CheckCircle2 className="w-3.5 h-3.5" />
+                          }
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleReject(visitor._id)}
+                          disabled={!!actionLoading}
+                          className="flex items-center gap-1.5 px-4 py-2 bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-bold rounded-xl border border-red-500/20 transition-all disabled:opacity-50"
+                        >
+                          {actionLoading === visitor._id + '_reject'
+                            ? <div className="w-3 h-3 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                            : <XCircle className="w-3.5 h-3.5" />
+                          }
+                          Reject
+                        </button>
+                      </div>
+                    </div>
                   )}
 
                   {visitor.status === 'approved' && (

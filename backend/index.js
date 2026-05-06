@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
+require('./jobs/dailyBriefing'); // Initialize cron jobs
 
 dotenv.config();
 
@@ -30,11 +31,21 @@ const authRoutes = require('./routes/auth');
 const visitorRoutes = require('./routes/visitors');
 const hostRoutes = require('./routes/hosts');
 const bookingRoutes = require('./routes/bookings');
+const roomRoutes = require('./routes/rooms');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/visitors', visitorRoutes);
 app.use('/api/hosts', hostRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/stats', require('./routes/stats'));
+
+// Test Routes (for demo purposes)
+app.get('/api/test/trigger-briefing', async (req, res) => {
+  const { executeMorningBriefing } = require('./jobs/dailyBriefing');
+  await executeMorningBriefing();
+  res.json({ message: 'Morning briefing triggered successfully' });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

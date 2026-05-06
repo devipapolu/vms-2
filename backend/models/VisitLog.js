@@ -4,6 +4,7 @@ const visitLogSchema = new mongoose.Schema({
   visitorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Visitor', required: true },
   visitorName: { type: String }, // cached for quick display
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room' }, // Added for room assignment
   purpose: { type: String, required: true },
   checkInTime: { type: Date, default: Date.now },
   checkOutTime: { type: Date },

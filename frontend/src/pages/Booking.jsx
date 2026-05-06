@@ -76,10 +76,10 @@ const Booking = () => {
             <div>
               <label className="block text-sm text-gray-400 mb-1">Visitor Name</label>
               <div className="relative">
-                <User className="absolute left-3 top-3 w-5 h-5 text-gray-600" />
+                <User className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input 
                   type="text" 
-                  className="pl-10"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pl-10 text-white focus:outline-none focus:border-indigo-500 transition-all"
                   required 
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -89,10 +89,10 @@ const Booking = () => {
             <div>
               <label className="block text-sm text-gray-400 mb-1">Phone Number</label>
               <div className="relative">
-                <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-600" />
+                <Phone className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <input 
                   type="tel" 
-                  className="pl-10"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg p-3 pl-10 text-white focus:outline-none focus:border-indigo-500 transition-all"
                   required 
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
@@ -103,6 +103,7 @@ const Booking = () => {
               <label className="block text-sm text-gray-400 mb-1">Purpose</label>
               <input 
                 type="text" 
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 transition-all"
                 required 
                 value={formData.purpose}
                 onChange={(e) => setFormData({...formData, purpose: e.target.value})}
@@ -114,19 +115,20 @@ const Booking = () => {
             <div>
               <label className="block text-sm text-gray-400 mb-1">Select Host</label>
               <select 
-                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 transition-all [color-scheme:dark]"
                 required
                 value={formData.hostId}
                 onChange={(e) => setFormData({...formData, hostId: e.target.value})}
               >
-                <option value="">Choose Host...</option>
-                {hosts.map(h => <option key={h._id} value={h._id}>{h.name} ({h.department})</option>)}
+                <option value="" className="bg-[#1e293b] text-white">Choose Host...</option>
+                {hosts.map(h => <option key={h._id} value={h._id} className="bg-[#1e293b] text-white">{h.name} ({h.department})</option>)}
               </select>
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Meeting Date</label>
               <input 
                 type="date" 
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 transition-all [color-scheme:dark]"
                 required 
                 value={formData.date}
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
